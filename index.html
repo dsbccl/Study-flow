@@ -2,7 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=1024">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0a0a0f">
 <title>StudyFlow — Daily Tracker</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -177,11 +181,69 @@ input[type=text],input[type=number]{flex:1}
 .lb-time{font-family:'Space Mono',monospace;font-size:.8rem;color:var(--accent2)}
 
 /* RESPONSIVE */
+/* RESPONSIVE */
 @media(max-width:600px){
-  .dash-grid{grid-template-columns:1fr 1fr}
-  .focus-timer{font-size:4rem}
-  #yt-panel.open{width:100%;position:fixed;right:0;top:57px;height:calc(100vh - 57px);z-index:300}
-}
+  /* Nav */
+  #topnav{padding:10px 12px;gap:8px}
+  .nav-actions{gap:6px}
+  #user-name-nav{display:none}
+  .btn-sm{padding:4px 8px;font-size:.7rem}
+
+  /* Layout */
+  #app{height:calc(100vh - 52px)}
+  #main-panel{padding:10px}
+
+  /* Dashboard grid - 2 cols */
+  .dash-grid{grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+  .stat-card{padding:12px}
+  .stat-val{font-size:1.5rem}
+
+  /* Tabs - scrollable row */
+  .tabs{gap:2px;padding:3px;overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch}
+  .tab{flex:0 0 auto;padding:6px 10px;font-size:.72rem;white-space:nowrap}
+
+  /* Input rows stack vertically */
+  .input-row{flex-wrap:wrap}
+  .input-row input[type=text],.input-row input[type=number]{min-width:0;width:100%}
+  .input-row select{flex:1}
+
+  /* Quick timer stacks */
+  #quick-subject{width:100%}
+  #quick-duration{flex:1}
+
+  /* Subjects form */
+  #sub-name{width:100%}
+  #sub-goal{width:100%}
+
+  /* Task form */
+  #task-text{width:100%}
+  #task-priority,#task-subject{flex:1}
+
+  /* Focus overlay */
+  .focus-timer{font-size:3.5rem;letter-spacing:-2px}
+  .focus-progress{width:90vw}
+  .focus-quote{font-size:.78rem;padding:0 16px}
+
+  /* YT panel - full screen overlay */
+  #yt-panel.open{width:100%;position:fixed;right:0;top:0;height:100vh;z-index:400}
+  #yt-toggle{top:auto;bottom:70px;transform:none}
+
+  /* Sections */
+  .section{padding:12px}
+  .section-title{font-size:.9rem}
+
+  /* Modal */
+  .modal{width:95vw;padding:16px}
+
+  /* Toast above bottom */
+  #toast{bottom:16px;font-size:.78rem;max-width:90vw;white-space:normal;text-align:center}
+
+  /* Group chat */
+  #room-chat{height:120px}
+
+  /* Auth box */
+  .auth-box{padding:24px 18px}
+  }
 </style>
 </head>
 <body>
