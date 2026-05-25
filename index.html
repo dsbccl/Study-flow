@@ -1,0 +1,1164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1024">
+<title>StudyFlow — Daily Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0a0a0f;--surface:#12121a;--surface2:#1a1a26;--surface3:#22223a;
+  --accent:#7c3aed;--accent2:#06b6d4;--accent3:#f59e0b;--danger:#ef4444;--success:#10b981;
+  --text:#e2e8f0;--muted:#64748b;--border:#2d2d45;
+  --focus-bg:#050508;
+}
+html,body{height:100%;overflow-x:hidden}
+body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);display:flex;flex-direction:column}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:var(--surface)}::-webkit-scrollbar-thumb{background:var(--accent);border-radius:2px}
+
+/* TOP NAV */
+#topnav{display:flex;align-items:center;justify-content:space-between;padding:12px 24px;background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
+.logo{font-size:1.3rem;font-weight:800;letter-spacing:-1px;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.nav-actions{display:flex;gap:10px;align-items:center}
+.btn{padding:7px 16px;border-radius:8px;border:none;cursor:pointer;font-family:'Syne',sans-serif;font-weight:600;font-size:.82rem;transition:all .2s}
+.btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{background:#6d28d9;transform:translateY(-1px)}
+.btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border)}.btn-secondary:hover{background:var(--surface3)}
+.btn-danger{background:var(--danger);color:#fff}.btn-danger:hover{background:#dc2626}
+.btn-success{background:var(--success);color:#fff}.btn-success:hover{background:#059669}
+.btn-sm{padding:5px 10px;font-size:.75rem}
+#user-badge{display:flex;align-items:center;gap:8px;font-size:.82rem}
+#user-avatar{width:30px;height:30px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.75rem}
+
+/* LAYOUT */
+#app{display:flex;flex:1;overflow:hidden;height:calc(100vh - 57px)}
+#main-panel{flex:1;overflow-y:auto;padding:20px}
+#yt-panel{width:0;overflow:hidden;transition:width .35s cubic-bezier(.4,0,.2,1);background:var(--surface);border-left:1px solid var(--border);display:flex;flex-direction:column}
+#yt-panel.open{width:320px}
+
+/* YT TOGGLE */
+#yt-toggle{position:fixed;right:0;top:50%;transform:translateY(-50%);background:var(--accent);color:#fff;border:none;cursor:pointer;padding:10px 6px;border-radius:8px 0 0 8px;font-size:1rem;z-index:200;transition:background .2s}
+#yt-toggle:hover{background:#6d28d9}
+
+/* DASHBOARD GRID */
+.dash-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:20px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px;position:relative;overflow:hidden}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.stat-card.purple::before{background:linear-gradient(90deg,var(--accent),var(--accent2))}
+.stat-card.cyan::before{background:linear-gradient(90deg,var(--accent2),var(--success))}
+.stat-card.amber::before{background:linear-gradient(90deg,var(--accent3),var(--danger))}
+.stat-card.green::before{background:linear-gradient(90deg,var(--success),var(--accent2))}
+.stat-val{font-size:2rem;font-weight:800;font-family:'Space Mono',monospace;line-height:1}
+.stat-label{font-size:.75rem;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:.5px}
+
+/* SECTIONS */
+.section{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px;margin-bottom:16px}
+.section-title{font-size:1rem;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.section-title .icon{font-size:1.1rem}
+
+/* SUBJECT LIST */
+.subject-list{display:flex;flex-direction:column;gap:8px}
+.subject-item{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--surface2);border-radius:10px;border:1px solid var(--border);transition:border-color .2s}
+.subject-item:hover{border-color:var(--accent)}
+.subject-color{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.subject-name{flex:1;font-weight:600;font-size:.88rem}
+.subject-time{font-family:'Space Mono',monospace;font-size:.8rem;color:var(--accent2)}
+.subject-actions{display:flex;gap:6px}
+.progress-bar{height:4px;background:var(--surface3);border-radius:2px;margin-top:6px;overflow:hidden}
+.progress-fill{height:100%;border-radius:2px;transition:width .5s ease;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+
+/* TASK LIST */
+.task-item{display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--surface2);border-radius:8px;border:1px solid var(--border);margin-bottom:6px;transition:all .2s}
+.task-item.done{opacity:.5}
+.task-item.done .task-text{text-decoration:line-through}
+.task-check{width:18px;height:18px;border-radius:4px;border:2px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s}
+.task-check.checked{background:var(--success);border-color:var(--success)}
+.task-text{flex:1;font-size:.85rem}
+.task-priority{font-size:.65rem;padding:2px 7px;border-radius:20px;font-weight:700;text-transform:uppercase}
+.pri-high{background:rgba(239,68,68,.2);color:#ef4444}
+.pri-med{background:rgba(245,158,11,.2);color:#f59e0b}
+.pri-low{background:rgba(16,185,129,.2);color:#10b981}
+
+/* INPUT ROW */
+.input-row{display:flex;gap:8px;margin-bottom:12px}
+input,select,textarea{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:8px;font-family:'Syne',sans-serif;font-size:.85rem;outline:none;transition:border-color .2s}
+input:focus,select:focus,textarea:focus{border-color:var(--accent)}
+input::placeholder{color:var(--muted)}
+input[type=text],input[type=number]{flex:1}
+
+/* FOCUS MODE OVERLAY */
+#focus-overlay{position:fixed;inset:0;background:var(--focus-bg);z-index:1000;display:none;flex-direction:column;align-items:center;justify-content:center}
+#focus-overlay.active{display:flex}
+.focus-subject{font-size:1rem;color:var(--muted);text-transform:uppercase;letter-spacing:3px;margin-bottom:12px}
+.focus-timer{font-family:'Space Mono',monospace;font-size:6rem;font-weight:700;letter-spacing:-4px;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1}
+.focus-mode-label{font-size:.75rem;color:var(--muted);margin-top:8px;letter-spacing:2px;text-transform:uppercase}
+.focus-controls{display:flex;gap:12px;margin-top:28px}
+.focus-progress{width:300px;height:4px;background:var(--surface3);border-radius:2px;margin-top:20px;overflow:hidden}
+.focus-progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:2px;transition:width 1s linear}
+.focus-quote{font-size:.85rem;color:var(--muted);margin-top:24px;text-align:center;max-width:400px;font-style:italic}
+.strict-badge{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:#ef4444;padding:4px 12px;border-radius:20px;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-top:10px}
+
+/* GROUP STUDY */
+.group-room{background:var(--surface2);border-radius:10px;padding:14px;border:1px solid var(--border);margin-bottom:8px}
+.group-room-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.room-name{font-weight:700;font-size:.9rem}
+.room-users{display:flex;gap:-4px}
+.room-user-dot{width:24px;height:24px;border-radius:50%;border:2px solid var(--surface);display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;margin-left:-4px}
+.online-dot{width:8px;height:8px;border-radius:50%;background:var(--success);display:inline-block;margin-right:4px;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* YT PANEL */
+#yt-panel{padding:0}
+.yt-header{padding:14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.yt-header-title{font-weight:700;font-size:.9rem}
+#yt-frame-wrap{width:100%;aspect-ratio:16/9;background:#000}
+#yt-frame-wrap iframe{width:100%;height:100%}
+.yt-controls{padding:12px}
+.yt-playlist{max-height:calc(100vh - 57px - 180px - 120px);overflow-y:auto;padding:0 12px 12px}
+.yt-track{display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;cursor:pointer;transition:background .2s;font-size:.78rem}
+.yt-track:hover,.yt-track.active{background:var(--surface2)}
+.yt-track.active{border-left:2px solid var(--accent)}
+.yt-track-num{width:18px;color:var(--muted);font-family:'Space Mono',monospace;font-size:.7rem;text-align:center;flex-shrink:0}
+.yt-track-title{flex:1;line-height:1.3}
+.yt-search{display:flex;gap:6px;padding:0 12px 8px}
+.yt-search input{flex:1;font-size:.78rem}
+
+/* AUTH */
+#auth-screen{position:fixed;inset:0;background:var(--bg);z-index:2000;display:flex;align-items:center;justify-content:center}
+.auth-box{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:36px;width:380px;max-width:90vw}
+.auth-title{font-size:1.8rem;font-weight:800;margin-bottom:4px;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.auth-sub{color:var(--muted);font-size:.85rem;margin-bottom:24px}
+.auth-tabs{display:flex;margin-bottom:20px;border-bottom:1px solid var(--border)}
+.auth-tab{padding:8px 16px;cursor:pointer;font-weight:600;font-size:.85rem;border-bottom:2px solid transparent;transition:all .2s;color:var(--muted)}
+.auth-tab.active{color:var(--text);border-bottom-color:var(--accent)}
+.auth-field{margin-bottom:12px}
+.auth-field label{display:block;font-size:.78rem;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px}
+.auth-field input{width:100%;padding:10px 14px}
+.auth-error{color:var(--danger);font-size:.78rem;margin-bottom:10px}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:500;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;width:420px;max-width:90vw}
+.modal-title{font-size:1.1rem;font-weight:700;margin-bottom:16px}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:16px}
+
+/* TABS */
+.tabs{display:flex;gap:4px;margin-bottom:16px;background:var(--surface2);padding:4px;border-radius:10px}
+.tab{flex:1;padding:7px;text-align:center;cursor:pointer;border-radius:7px;font-size:.8rem;font-weight:600;color:var(--muted);transition:all .2s}
+.tab.active{background:var(--accent);color:#fff}
+
+/* HEATMAP */
+.heatmap{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.heat-cell{aspect-ratio:1;border-radius:3px;background:var(--surface2);transition:all .2s}
+.heat-cell:hover{transform:scale(1.2)}
+
+/* TOAST */
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(100px);background:var(--surface);border:1px solid var(--border);padding:10px 20px;border-radius:10px;font-size:.85rem;z-index:3000;transition:transform .3s;white-space:nowrap}
+#toast.show{transform:translateX(-50%) translateY(0)}
+
+/* BLOCKING OVERLAY */
+#block-overlay{position:fixed;inset:0;background:rgba(5,5,8,.95);z-index:999;display:none;flex-direction:column;align-items:center;justify-content:center;backdrop-filter:blur(20px)}
+#block-overlay.active{display:flex}
+.block-icon{font-size:4rem;margin-bottom:16px}
+.block-title{font-size:1.5rem;font-weight:800;color:var(--danger)}
+.block-sub{color:var(--muted);margin-top:8px;font-size:.9rem;text-align:center}
+
+/* COLORS */
+.colors{display:flex;gap:6px;flex-wrap:wrap}
+.color-dot{width:22px;height:22px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:border-color .2s}
+.color-dot.selected{border-color:#fff}
+
+/* LEADERBOARD */
+.lb-item{display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--surface2);border-radius:8px;margin-bottom:6px}
+.lb-rank{font-family:'Space Mono',monospace;font-size:.8rem;color:var(--muted);width:22px}
+.lb-name{flex:1;font-weight:600;font-size:.85rem}
+.lb-time{font-family:'Space Mono',monospace;font-size:.8rem;color:var(--accent2)}
+
+/* RESPONSIVE */
+@media(max-width:600px){
+  .dash-grid{grid-template-columns:1fr 1fr}
+  .focus-timer{font-size:4rem}
+  #yt-panel.open{width:100%;position:fixed;right:0;top:57px;height:calc(100vh - 57px);z-index:300}
+}
+</style>
+</head>
+<body>
+
+<!-- AUTH SCREEN -->
+<div id="auth-screen">
+  <div class="auth-box">
+    <div class="auth-title">StudyFlow</div>
+    <div class="auth-sub">Track. Focus. Achieve.</div>
+    <div class="auth-tabs">
+      <div class="auth-tab active" id="tab-login-btn" onclick="switchAuthTab('login')">Login</div>
+      <div class="auth-tab" id="tab-register-btn" onclick="switchAuthTab('register')">Register</div>
+    </div>
+    <div id="auth-error" class="auth-error"></div>
+    <div id="login-form">
+      <div class="auth-field"><label>Email</label><input id="login-email" type="email" placeholder="you@example.com"></div>
+      <div class="auth-field"><label>Password</label><input id="login-pass" type="password" placeholder="••••••••"></div>
+      <button class="btn btn-primary" style="width:100%;padding:10px;font-size:.9rem" onclick="doLogin()">Login</button>
+      <button class="btn btn-secondary" style="width:100%;padding:10px;font-size:.9rem;margin-top:8px" onclick="doAnon()">Continue as Guest</button>
+    </div>
+    <div id="register-form" style="display:none">
+      <div class="auth-field"><label>Display Name</label><input id="reg-name" type="text" placeholder="Your name"></div>
+      <div class="auth-field"><label>Email</label><input id="reg-email" type="email" placeholder="you@example.com"></div>
+      <div class="auth-field"><label>Password</label><input id="reg-pass" type="password" placeholder="••••••••"></div>
+      <button class="btn btn-primary" style="width:100%;padding:10px;font-size:.9rem" onclick="doRegister()">Create Account</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOP NAV -->
+<div id="topnav">
+  <div class="logo">⚡ StudyFlow</div>
+  <div class="nav-actions">
+    <button class="btn btn-secondary btn-sm" onclick="openFocusSetup()">🎯 Focus Mode</button>
+    <button class="btn btn-secondary btn-sm" onclick="showTab('group')">👥 Group Study</button>
+    <div id="user-badge">
+      <div id="user-avatar">U</div>
+      <span id="user-name-nav">User</span>
+      <button class="btn btn-secondary btn-sm" onclick="doLogout()">Exit</button>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app">
+  <div id="main-panel">
+
+    <!-- TABS -->
+    <div class="tabs">
+      <div class="tab active" onclick="showTab('dashboard')">📊 Dashboard</div>
+      <div class="tab" onclick="showTab('subjects')">📚 Subjects</div>
+      <div class="tab" onclick="showTab('tasks')">✅ Tasks</div>
+      <div class="tab" onclick="showTab('group')">👥 Group</div>
+      <div class="tab" onclick="showTab('stats')">📈 Stats</div>
+    </div>
+
+    <!-- DASHBOARD TAB -->
+    <div id="tab-dashboard">
+      <div class="dash-grid">
+        <div class="stat-card purple">
+          <div class="stat-val" id="stat-today">0h 0m</div>
+          <div class="stat-label">Today's Study</div>
+        </div>
+        <div class="stat-card cyan">
+          <div class="stat-val" id="stat-week">0h</div>
+          <div class="stat-label">This Week</div>
+        </div>
+        <div class="stat-card amber">
+          <div class="stat-val" id="stat-streak">0🔥</div>
+          <div class="stat-label">Day Streak</div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-val" id="stat-tasks">0/0</div>
+          <div class="stat-label">Tasks Done</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title"><span class="icon">⏱️</span> Quick Timer</div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <select id="quick-subject" style="flex:1;min-width:140px">
+            <option value="">Select subject...</option>
+          </select>
+          <select id="quick-duration" style="width:120px">
+            <option value="1500">25 min (Pomodoro)</option>
+            <option value="2700">45 min</option>
+            <option value="3600">1 hour</option>
+            <option value="5400">1.5 hours</option>
+            <option value="7200">2 hours</option>
+            <option value="custom">Custom</option>
+          </select>
+          <input id="quick-custom" type="number" placeholder="Minutes" style="width:100px;display:none" min="1" max="480">
+          <label style="display:flex;align-items:center;gap:6px;font-size:.82rem;cursor:pointer">
+            <input type="checkbox" id="strict-mode" style="width:auto"> <span>🔒 Strict</span>
+          </label>
+          <button class="btn btn-primary" onclick="startQuickFocus()">▶ Start</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title"><span class="icon">📅</span> Activity Heatmap (Last 28 days)</div>
+        <div class="heatmap" id="heatmap"></div>
+        <div style="display:flex;gap:6px;align-items:center;margin-top:8px;font-size:.72rem;color:var(--muted)">
+          <span>Less</span>
+          <div style="width:12px;height:12px;border-radius:2px;background:var(--surface2)"></div>
+          <div style="width:12px;height:12px;border-radius:2px;background:#3b1e8e"></div>
+          <div style="width:12px;height:12px;border-radius:2px;background:var(--accent)"></div>
+          <div style="width:12px;height:12px;border-radius:2px;background:var(--accent2)"></div>
+          <span>More</span>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title"><span class="icon">📚</span> Today's Subjects</div>
+        <div class="subject-list" id="today-subjects"></div>
+      </div>
+    </div>
+
+    <!-- SUBJECTS TAB -->
+    <div id="tab-subjects" style="display:none">
+      <div class="section">
+        <div class="section-title"><span class="icon">➕</span> Add Subject</div>
+        <div class="input-row">
+          <input id="sub-name" type="text" placeholder="Subject name (e.g. Mathematics)">
+          <input id="sub-goal" type="number" placeholder="Daily goal (min)" style="width:130px" min="1">
+          <button class="btn btn-primary" onclick="addSubject()">Add</button>
+        </div>
+        <div style="margin-top:8px">
+          <div style="font-size:.78rem;color:var(--muted);margin-bottom:6px">Pick color:</div>
+          <div class="colors" id="color-picker"></div>
+        </div>
+      </div>
+      <div class="section">
+        <div class="section-title"><span class="icon">📚</span> My Subjects</div>
+        <div id="subject-list-full"></div>
+      </div>
+    </div>
+
+    <!-- TASKS TAB -->
+    <div id="tab-tasks" style="display:none">
+      <div class="section">
+        <div class="section-title"><span class="icon">➕</span> Add Task</div>
+        <div class="input-row">
+          <input id="task-text" type="text" placeholder="What do you need to do?">
+          <select id="task-priority" style="width:100px">
+            <option value="high">🔴 High</option>
+            <option value="med" selected>🟡 Med</option>
+            <option value="low">🟢 Low</option>
+          </select>
+          <select id="task-subject" style="width:130px"><option value="">No subject</option></select>
+          <button class="btn btn-primary" onclick="addTask()">Add</button>
+        </div>
+      </div>
+   <div class="section">
+        <div class="section-title"><span class="icon">📋</span> Tasks</div>
+        <div style="display:flex;gap:6px;margin-bottom:10px">
+          <button class="btn btn-sm btn-secondary" onclick="filterTasks('all')" id="tf-all" style="border-color:var(--accent);color:var(--accent)">All</button>
+          <button class="btn btn-sm btn-secondary" onclick="filterTasks('pending')" id="tf-pending">Pending</button>
+          <button class="btn btn-sm btn-secondary" onclick="filterTasks('done')" id="tf-done">Done</button>
+        </div>
+        <div id="task-list"></div>
+      </div>
+    </div>
+
+    <!-- GROUP TAB -->
+    <div id="tab-group" style="display:none">
+      <div class="section">
+        <div class="section-title"><span class="icon">🏠</span> Create Room</div>
+        <div class="input-row">
+          <input id="room-name-input" type="text" placeholder="Room name (e.g. CS Study Group)">
+          <button class="btn btn-primary" onclick="createRoom()">Create</button>
+        </div>
+      </div>
+      <div class="section">
+        <div class="section-title"><span class="icon">🔗</span> Join Room</div>
+        <div class="input-row">
+          <input id="room-id-input" type="text" placeholder="Enter Room ID">
+          <button class="btn btn-secondary" onclick="joinRoom()">Join</button>
+        </div>
+      </div>
+      <div class="section">
+        <div class="section-title"><span class="icon">👥</span> Active Rooms</div>
+        <div id="room-list"></div>
+      </div>
+      <div id="current-room-section" style="display:none">
+        <div class="section">
+          <div class="section-title">
+            <span class="icon">🟢</span>
+            <span id="current-room-name">Room</span>
+            <span style="font-size:.7rem;color:var(--muted);margin-left:auto" id="current-room-id"></span>
+            <button class="btn btn-sm btn-danger" style="margin-left:8px" onclick="leaveRoom()">Leave</button>
+          </div>
+          <div style="font-size:.8rem;color:var(--muted);margin-bottom:10px">Members online:</div>
+          <div id="room-members" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px"></div>
+          <div style="font-size:.8rem;color:var(--muted);margin-bottom:6px">Room chat:</div>
+          <div id="room-chat" style="height:160px;overflow-y:auto;background:var(--surface2);border-radius:8px;padding:10px;margin-bottom:8px;font-size:.82rem"></div>
+          <div class="input-row">
+            <input id="chat-msg" type="text" placeholder="Type a message..." onkeydown="if(event.key==='Enter')sendChat()">
+            <button class="btn btn-primary" onclick="sendChat()">Send</button>
+          </div>
+          <div style="margin-top:12px">
+            <button class="btn btn-primary" onclick="startGroupFocus()">🎯 Start Group Focus Session</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STATS TAB -->
+    <div id="tab-stats" style="display:none">
+      <div class="section">
+        <div class="section-title"><span class="icon">🏆</span> Leaderboard (Group)</div>
+        <div id="leaderboard"></div>
+      </div>
+      <div class="section">
+        <div class="section-title"><span class="icon">📊</span> Subject Breakdown</div>
+        <div id="subject-stats"></div>
+      </div>
+      <div class="section">
+        <div class="section-title"><span class="icon">📅</span> Weekly Summary</div>
+        <div id="weekly-stats"></div>
+      </div>
+    </div>
+
+  </div><!-- /main-panel -->
+
+  <!-- YT PANEL -->
+  <div id="yt-panel">
+    <div class="yt-header">
+      <div class="yt-header-title">🎵 Study Music</div>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-sm btn-secondary" onclick="shufflePlaylist()" title="Shuffle">🔀</button>
+        <button class="btn btn-sm btn-secondary" onclick="toggleYT()">✕</button>
+      </div>
+    </div>
+    <div class="yt-frame-wrap" id="yt-frame-wrap">
+      <div id="yt-player"></div>
+    </div>
+    <div class="yt-controls">
+      <div style="display:flex;gap:6px;margin-bottom:8px">
+        <button class="btn btn-sm btn-secondary" onclick="prevTrack()">⏮</button>
+        <button class="btn btn-sm btn-primary" onclick="togglePlay()" id="play-btn">⏸ Pause</button>
+        <button class="btn btn-sm btn-secondary" onclick="nextTrack()">⏭</button>
+        <select id="yt-playlist-select" style="flex:1;font-size:.72rem" onchange="loadPlaylist(this.value)">
+          <option value="lofi">Lo-fi Hip Hop</option>
+          <option value="classical">Classical Focus</option>
+          <option value="jazz">Jazz Study</option>
+          <option value="ambient">Ambient</option>
+          <option value="custom">Custom URL</option>
+        </select>
+      </div>
+      <div class="yt-search">
+        <input id="yt-search-input" type="text" placeholder="🔍 Search YouTube music..." style="font-size:.75rem" onkeydown="if(event.key==='Enter')searchYouTube()">
+        <button class="btn btn-sm btn-primary" onclick="searchYouTube()" id="yt-search-btn">Go</button>
+      </div>
+      <div id="yt-search-results" style="max-height:160px;overflow-y:auto;padding:0 0 4px"></div>
+    </div>
+    <div class="yt-playlist" id="yt-playlist-items"></div>
+  </div>
+</div><!-- /app -->
+
+<!-- YT TOGGLE -->
+<button id="yt-toggle" onclick="toggleYT()">🎵</button>
+<!-- FOCUS OVERLAY -->
+<div id="focus-overlay">
+  <div class="focus-subject" id="focus-subject-label">Mathematics</div>
+  <div class="focus-timer" id="focus-timer-display">25:00</div>
+  <div class="focus-mode-label" id="focus-mode-label">FOCUS SESSION</div>
+  <div id="strict-badge" class="strict-badge" style="display:none">🔒 STRICT MODE — NO EXIT</div>
+  <div class="focus-progress"><div class="focus-progress-fill" id="focus-progress-fill"></div></div>
+  <div class="focus-controls">
+    <button class="btn btn-secondary" id="focus-pause-btn" onclick="toggleFocusPause()">⏸ Pause</button>
+    <button class="btn btn-danger" id="focus-stop-btn" onclick="stopFocus()">■ Stop</button>
+  </div>
+  <div class="focus-quote" id="focus-quote">"The secret of getting ahead is getting started." — Mark Twain</div>
+  <div style="margin-top:16px;font-size:.75rem;color:var(--muted)" id="focus-block-notice"></div>
+</div>
+
+<!-- BLOCK OVERLAY -->
+<div id="block-overlay">
+  <div class="block-icon">🚫</div>
+  <div class="block-title">App Blocked</div>
+  <div class="block-sub">You're in Focus Mode.<br>Stay focused! Return to your study session.</div>
+  <button class="btn btn-primary" style="margin-top:20px" onclick="returnToFocus()">Return to Focus</button>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- Firebase + YouTube API -->
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script src="https://www.youtube.com/iframe_api"></script>
+<script>
+// ── FIREBASE ────────────────────────────────────────────
+const firebaseConfig = {
+  apiKey: "AIzaSyA9YDL42bnNl3rXPLx4KkZ0M2FAk9Ki5GY",
+  authDomain: "study-8ea0e.firebaseapp.com",
+  databaseURL: "https://study-8ea0e-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "study-8ea0e",
+  storageBucket: "study-8ea0e.firebasestorage.app",
+  messagingSenderId: "92380698515",
+  appId: "1:92380698515:web:950a188a2036e8ddf33a66"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.database();
+
+let currentUser = null, userRef = null;
+
+// ── AUTH SWITCHING ───────────────────────────────────────
+function switchAuthTab(t) {
+  const loginTab = document.getElementById('tab-login-btn');
+  const regTab = document.getElementById('tab-register-btn');
+  
+  if (loginTab && regTab) {
+    loginTab.classList.toggle('active', t === 'login');
+    regTab.classList.toggle('active', t === 'register');
+  }
+  
+  const loginForm = document.getElementById('login-form');
+  const registerForm = document.getElementById('register-form');
+  
+  if (loginForm && registerForm) {
+    loginForm.style.display = (t === 'login' ? '' : 'none');
+    registerForm.style.display = (t === 'register' ? '' : 'none');
+  }
+}
+// ── STATE ───────────────────────────────────────────────
+let subjects = [], tasks = [], sessions = [];
+let focusTimer = null, focusSeconds = 0, focusTotalSeconds = 1500;
+let focusPaused = false, focusStrict = false, focusRunning = false;
+let focusSubject = '', focusStartTime = null;
+let currentRoom = null, roomRef = null;
+let taskFilter = 'all';
+let selectedColor = '#7c3aed';
+const COLORS = ['#7c3aed','#06b6d4','#f59e0b','#ef4444','#10b981','#ec4899','#8b5cf6','#3b82f6','#f97316','#14b8a6'];
+const QUOTES = [
+  'The secret of getting ahead is getting started. — Mark Twain',
+  'Focus on being productive instead of busy. — Tim Ferriss',
+  'It always seems impossible until it’s done. — Nelson Mandela',
+  'Success is the sum of small efforts repeated day in and day out. — Robert Collier',
+  'Believe you can and you’re halfway there. — Theodore Roosevelt',
+  'Don’t watch the clock; do what it does. Keep going. — Sam Levenson',
+];
+
+// ── PLAYLISTS ───────────────────────────────────────────
+const PLAYLISTS = {
+  lofi: [
+    {id:'jfKfPfyJRdk',title:'Lo-fi Hip Hop Radio 🎵'},
+    {id:'5qap5aO4i9A',title:'Lo-fi Chill Beats'},
+    {id:'DWcJFNfaw9c',title:'Late Night Study Beats'},
+    {id:'bmVKaAV_7-A',title:'Coffee Shop Ambience'},
+    {id:'rUxyKA_-grg',title:'Rainy Day Lo-fi'},
+  ],
+  classical: [
+    {id:'_Whf4LKDXCY',title:'Classical Study Music'},
+    {id:'mRD0-GxqHVo',title:'Mozart for Studying'},
+    {id:'4Tr0otuiQuU',title:'Beethoven Focus'},
+    {id:'3dQLQHN0ioA',title:'Bach Concentration'},
+  ],
+  jazz: [
+    {id:'Dx5qFachd3A',title:'Jazz for Studying'},
+    {id:'neV3EPgvZ3g',title:'Coffee Shop Jazz'},
+    {id:'FGLGgq2gRNI',title:'Smooth Jazz Study'},
+  ],
+  ambient: [
+    {id:'lTRiuFIWV54',title:'Deep Focus Ambient'},
+    {id:'qH3fETPsqjk',title:'Ambient Study Soundscape'},
+    {id:'n61ULEU7CO0',title:'Forest Rain Ambience'},
+  ],
+};
+let currentPlaylist = [...PLAYLISTS.lofi];
+let currentTrackIndex = 0;
+let ytPlayer = null, ytReady = false, ytPlaying = true;
+// ── YOUTUBE IFrame API ──────────────────────────────────
+function onYouTubeIframeAPIReady() {
+  ytPlayer = new YT.Player('yt-player', {
+    height: '180', width: '100%',
+    videoId: currentPlaylist[0].id,
+    playerVars: {autoplay:0, controls:1, modestbranding:1, rel:0},
+    events: {
+      onReady: () => { ytReady = true; renderPlaylistUI(); },
+      onStateChange: e => {
+        if(e.data === YT.PlayerState.ENDED) nextTrack();
+        if(e.data === YT.PlayerState.PLAYING) { ytPlaying=true; document.getElementById('play-btn').textContent='⏸ Pause'; }
+        if(e.data === YT.PlayerState.PAUSED) { ytPlaying=false; document.getElementById('play-btn').textContent='▶ Play'; }
+      }
+    }
+  });
+}
+function togglePlay() {
+  if(!ytPlayer||!ytReady) return;
+  if(ytPlaying) ytPlayer.pauseVideo(); else ytPlayer.playVideo();
+}
+function nextTrack() {
+  currentTrackIndex = (currentTrackIndex+1)%currentPlaylist.length;
+  loadTrack(currentTrackIndex);
+}
+function prevTrack() {
+  currentTrackIndex = (currentTrackIndex-1+currentPlaylist.length)%currentPlaylist.length;
+  loadTrack(currentTrackIndex);
+}
+function loadTrack(i) {
+  currentTrackIndex = i;
+  if(ytPlayer&&ytReady) {
+    ytPlayer.loadVideoById(currentPlaylist[i].id);
+    document.getElementById('play-btn').textContent='⏸ Pause';
+    ytPlaying = true;
+  }
+  renderPlaylistUI();
+}
+function shufflePlaylist() {
+  for(let i=currentPlaylist.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [currentPlaylist[i],currentPlaylist[j]]=[currentPlaylist[j],currentPlaylist[i]];
+  }
+  currentTrackIndex=0; loadTrack(0); toast('🔀 Shuffled!');
+}
+function loadPlaylist(key) {
+  if(key==='custom') return;
+  currentPlaylist = [...PLAYLISTS[key]];
+  currentTrackIndex = 0; loadTrack(0); renderPlaylistUI();
+}
+async function searchYouTube() {
+  const query = document.getElementById('yt-search-input').value.trim();
+  if(!query) return;
+  const btn = document.getElementById('yt-search-btn');
+  btn.textContent = '...';
+  btn.disabled = true;
+  const resultsEl = document.getElementById('yt-search-results');
+  resultsEl.innerHTML = '<div style="color:var(--muted);font-size:.75rem;padding:6px">Searching...</div>';
+  try {
+    const YT_API_KEY = 'AIzaSyA6wEFpT3Rk9wiFNdx9GXb6HfNRWYFDXhY';
+    const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&videoCategoryId=10&maxResults=8&key=${YT_API_KEY}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    if(data.error) throw new Error(data.error.message);
+    if(!data.items||!data.items.length){resultsEl.innerHTML='<div style="color:var(--muted);font-size:.75rem;padding:6px">No results found.</div>';return;}
+    resultsEl.innerHTML = data.items.map(item=>`
+      <div class="yt-track" data-vid="${item.id.videoId}" data-title="${item.snippet.title.replace(/"/g,'&quot;')}" onclick="playSearchResult(this.dataset.vid, this.dataset.title)" style="font-size:.75rem;border-bottom:1px solid var(--border)">
+        <img src="${item.snippet.thumbnails.default.url}" style="width:40px;height:30px;object-fit:cover;border-radius:4px;flex-shrink:0">
+        <div class="yt-track-title" style="font-size:.72rem;line-height:1.3">${item.snippet.title}</div>
+      </div>`).join('');
+  } catch(e) {
+    resultsEl.innerHTML='<div style="color:var(--danger);font-size:.75rem;padding:6px">Search error: '+e.message+'</div>';
+  } finally {
+    btn.textContent = 'Go';
+    btn.disabled = false;
+  }
+}
+function playSearchResult(videoId, title) {
+  if(ytPlayer&&ytReady) {
+    ytPlayer.loadVideoById(videoId);
+    ytPlaying = true;
+    document.getElementById('play-btn').textContent='⏸ Pause';
+  }
+  document.getElementById('yt-search-results').innerHTML = '';
+  document.getElementById('yt-search-input').value = '';
+  toast('▶ Now playing: ' + title.substring(0,30) + (title.length>30?'...':''));
+}
+function renderPlaylistUI() {
+  const c = document.getElementById('yt-playlist-items');
+  c.innerHTML = currentPlaylist.map((t,i)=>`
+    <div class="yt-track ${i===currentTrackIndex?'active':''}" onclick="loadTrack(${i})">
+      <div class="yt-track-num">${i+1}</div>
+      <div class="yt-track-title">${t.title}</div>
+    </div>`).join('');
+}
+function toggleYT() {
+  const p = document.getElementById('yt-panel');
+  p.classList.toggle('open');
+  document.getElementById('yt-toggle').textContent = p.classList.contains('open')?'✕':'🎵';
+}
+
+async function doLogin() {
+  const e=document.getElementById('login-email').value, p=document.getElementById('login-pass').value;
+  try { await auth.signInWithEmailAndPassword(e,p); }
+  catch(err) { document.getElementById('auth-error').textContent = err.message; }
+}
+async function doRegister() {
+  const n=document.getElementById('reg-name').value, e=document.getElementById('reg-email').value, p=document.getElementById('reg-pass').value;
+  if(!n||!e||!p){document.getElementById('auth-error').textContent='All fields required';return;}
+  try {
+    const cred = await auth.createUserWithEmailAndPassword(e,p);
+    await cred.user.updateProfile({displayName:n});
+    await db.ref('users/'+cred.user.uid+'/profile').set({name:n,email:e,totalTime:0,streak:0});
+  } catch(err) { document.getElementById('auth-error').textContent = err.message; }
+}
+async function doAnon() {
+  try { await auth.signInAnonymously(); }
+  catch(err) { document.getElementById('auth-error').textContent = err.message; }
+}
+function doLogout() {
+  if(focusRunning && focusStrict) { toast('🔒 Exit strict mode first!'); return; }
+  if(currentRoom) leaveRoom();
+  auth.signOut();
+}
+
+auth.onAuthStateChanged(user => {
+  if(user) {
+    currentUser = user;
+    document.getElementById('auth-screen').style.display = 'none';
+    const name = user.displayName || (user.isAnonymous ? 'Guest' : user.email.split('@')[0]);
+    document.getElementById('user-name-nav').textContent = name;
+    document.getElementById('user-avatar').textContent = name[0].toUpperCase();
+    userRef = db.ref('users/'+user.uid);
+    loadUserData();
+    loadRooms();
+    loadLeaderboard();
+  } else {
+    currentUser = null;
+    document.getElementById('auth-screen').style.display = 'flex';
+  }
+});
+// ── DATA LOAD ────────────────────────────────────────────
+function loadUserData() {
+  userRef.child('subjects').on('value', snap => {
+    subjects = snap.val() ? Object.entries(snap.val()).map(([k,v])=>({id:k,...v})) : [];
+    renderSubjects(); renderSubjectSelects(); renderTodaySubjects(); renderStats();
+  });
+  userRef.child('tasks').on('value', snap => {
+    tasks = snap.val() ? Object.entries(snap.val()).map(([k,v])=>({id:k,...v})) : [];
+    renderTasks(); renderStats();
+  });
+  userRef.child('sessions').on('value', snap => {
+    sessions = snap.val() ? Object.values(snap.val()) : [];
+    renderHeatmap(); renderStats(); renderWeeklyStats(); renderSubjectStats();
+  });
+}
+
+// ── SUBJECTS ─────────────────────────────────────────────
+function addSubject() {
+  const name = document.getElementById('sub-name').value.trim();
+  const goal = parseInt(document.getElementById('sub-goal').value)||60;
+  if(!name) return toast('Enter subject name');
+  userRef.child('subjects').push({name, goal, color:selectedColor, totalTime:0});
+  document.getElementById('sub-name').value='';
+  document.getElementById('sub-goal').value='';
+  toast('✅ Subject added!');
+}
+function deleteSubject(id) {
+  userRef.child('subjects/'+id).remove();
+}
+function renderSubjects() {
+  const el = document.getElementById('subject-list-full');
+  if(!subjects.length){el.innerHTML='<div style="color:var(--muted);font-size:.85rem">No subjects yet. Add one above!</div>';return;}
+  el.innerHTML = subjects.map(s=>`
+    <div class="subject-item">
+      <div class="subject-color" style="background:${s.color}"></div>
+      <div style="flex:1">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div class="subject-name">${s.name}</div>
+          <div class="subject-time">${fmtMin(s.totalTime||0)}</div>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${Math.min(100,((s.totalTime||0)/(s.goal||60))*100)}%;background:${s.color}"></div></div>
+        <div style="font-size:.7rem;color:var(--muted);margin-top:2px">Goal: ${s.goal||60} min/day</div>
+      </div>
+      <div class="subject-actions">
+        <button class="btn btn-sm btn-primary" data-sid="${s.id}" data-sname="${s.name.replace(/"/g,'&quot;')}" onclick="startFocusFor(this.dataset.sid,this.dataset.sname)">Focus</button>
+        <button class="btn btn-sm btn-danger" data-sid="${s.id}" onclick="deleteSubject(this.dataset.sid)">✕</button>
+      </div>
+    </div>`).join('');
+}
+function renderSubjectSelects() {
+  const opts = '<option value="">No subject</option>' + subjects.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+  document.getElementById('quick-subject').innerHTML = '<option value="">Select subject...</option>'+subjects.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+  document.getElementById('task-subject').innerHTML = opts;
+}
+function renderTodaySubjects() {
+  const el = document.getElementById('today-subjects');
+  const today = todayKey();
+  if(!subjects.length){el.innerHTML='<div style="color:var(--muted);font-size:.85rem">No subjects. Add some in the Subjects tab!</div>';return;}
+  const todayTime = {};
+  sessions.filter(s=>s.date===today).forEach(s=>{todayTime[s.subjectId]=(todayTime[s.subjectId]||0)+s.duration;});
+  el.innerHTML = subjects.map(s=>{
+    const t=todayTime[s.id]||0, pct=Math.min(100,((t)/(s.goal||60))*100);
+    return `<div class="subject-item">
+      <div class="subject-color" style="background:${s.color}"></div>
+      <div style="flex:1">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div class="subject-name">${s.name}</div>
+          <div class="subject-time">${fmtMin(t)} / ${s.goal||60}m</div>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:${s.color}"></div></div>
+      </div>
+      <button class="btn btn-sm btn-primary" data-sid="${s.id}" data-sname="${s.name.replace(/"/g,'&quot;')}" onclick="startFocusFor(this.dataset.sid,this.dataset.sname)">▶</button>
+    </div>`;
+  }).join('');
+}
+
+// ── COLOR PICKER ─────────────────────────────────────────
+function renderColorPicker() {
+  document.getElementById('color-picker').innerHTML = COLORS.map(c=>`
+    <div class="color-dot ${c===selectedColor?'selected':''}" style="background:${c}" data-color="${c}" onclick="selectColor(this.dataset.color)"></div>`).join('');
+}
+function selectColor(c) {
+  selectedColor = c; renderColorPicker();
+}
+renderColorPicker();
+// ── TASKS ────────────────────────────────────────────────
+function addTask() {
+  const text = document.getElementById('task-text').value.trim();
+  if(!text) return toast('Enter task text');
+  const pri = document.getElementById('task-priority').value;
+  const subId = document.getElementById('task-subject').value;
+  userRef.child('tasks').push({text, priority:pri, subjectId:subId, done:false, date:todayKey()});
+  document.getElementById('task-text').value='';
+  toast('✅ Task added!');
+}
+function toggleTask(id, done) {
+  userRef.child('tasks/'+id).update({done:!done});
+}
+function deleteTask(id) { userRef.child('tasks/'+id).remove(); }
+function filterTasks(f) {
+  taskFilter = f;
+  ['all','pending','done'].forEach(x=>{
+    const el = document.getElementById('tf-'+x);
+    el.style.borderColor = x===f?'var(--accent)':'var(--border)';
+    el.style.color = x===f?'var(--accent)':'var(--text)';
+  });
+  renderTasks();
+}
+function renderTasks() {
+  const el = document.getElementById('task-list');
+  let filtered = tasks.filter(t => taskFilter==='all'?true:taskFilter==='done'?t.done:!t.done);
+  if(!filtered.length){el.innerHTML='<div style="color:var(--muted);font-size:.85rem">No tasks here!</div>';return;}
+  el.innerHTML = filtered.map(t=>`
+    <div class="task-item ${t.done?'done':''}">
+      <div class="task-check ${t.done?'checked':''}" data-tid="${t.id}" data-done="${t.done}" onclick="toggleTask(this.dataset.tid, this.dataset.done==='true')">${t.done?'✓':''}</div>
+      <div class="task-text">${t.text}</div>
+      <span class="task-priority pri-${t.priority}">${t.priority}</span>
+      <button class="btn btn-sm btn-secondary" data-tid="${t.id}" onclick="deleteTask(this.dataset.tid)" style="padding:3px 7px">✕</button>
+    </div>`).join('');
+}
+
+// ── FOCUS MODE ───────────────────────────────────────────
+document.getElementById('quick-duration').addEventListener('change', function(){
+  document.getElementById('quick-custom').style.display = this.value==='custom'?'':'none';
+});
+function openFocusSetup() {
+  startQuickFocus();
+}
+function startFocusFor(id, name) {
+  focusSubject = name;
+  focusSeconds = 1500;
+  focusTotalSeconds = 1500;
+  focusStrict = document.getElementById('strict-mode').checked;
+  beginFocus(id, name, 1500);
+}
+function startQuickFocus() {
+  const selSub = document.getElementById('quick-subject');
+  const name = selSub.options[selSub.selectedIndex]?.text || 'Study Session';
+  const subId = selSub.value;
+  
+  const dur = document.getElementById('quick-duration').value;
+  let secs = 0;
+  
+  if (dur === 'custom') {
+    secs = (parseInt(document.getElementById('quick-custom').value) || 25) * 60;
+  } else {
+    secs = parseInt(dur);
+  }
+  
+  focusStrict = document.getElementById('strict-mode').checked;
+  
+  beginFocus(subId, name === 'Select subject...' ? 'Study Session' : name, secs);
+}
+
+// ── TABS ─────────────────────────────────────────────────
+function showTab(id) {
+  const tabs = ['dashboard','subjects','tasks','group','stats'];
+  tabs.forEach(t=>{
+    const tabEl = document.getElementById('tab-'+t);
+    if(tabEl) tabEl.style.display = (t===id ? '' : 'none');
+  });
+  
+  const tabButtons = document.querySelectorAll('.tab');
+  tabs.forEach((t, index) => {
+    if(tabButtons[index]) {
+      tabButtons[index].classList.toggle('active', t === id);
+    }
+  });
+
+  if(id === 'stats'){
+    renderSubjectStats();
+    renderWeeklyStats();
+  }
+}// ── GROUP STUDY ──────────────────────────────────────────
+function createRoom() {
+  const name = document.getElementById('room-name-input').value.trim();
+  if(!name) return toast('Enter room name');
+  const id = Math.random().toString(36).substr(2,6).toUpperCase();
+  db.ref('rooms/'+id).set({
+    name, createdBy: currentUser.uid, createdAt: Date.now(),
+    members: {[currentUser.uid]: {name: currentUser.displayName||'User', online:true, joinedAt:Date.now()}}
+  });
+  joinRoomById(id);
+  document.getElementById('room-name-input').value='';
+  toast('Room created! ID: '+id);
+}
+function joinRoom() {
+  const id = document.getElementById('room-id-input').value.trim().toUpperCase();
+  if(!id) return;
+  db.ref('rooms/'+id).once('value', snap=>{
+    if(!snap.val()) { toast('Room not found'); return; }
+    joinRoomById(id);
+    document.getElementById('room-id-input').value='';
+  });
+}
+function joinRoomById(id) {
+  if(currentRoom===id) return;
+  if(currentRoom) leaveRoom();
+  currentRoom = id;
+  const name = currentUser.displayName||(currentUser.isAnonymous?'Guest':currentUser.email?.split('@')[0])||'User';
+  db.ref('rooms/'+id+'/members/'+currentUser.uid).set({name, online:true, joinedAt:Date.now()});
+  db.ref('rooms/'+id+'/members/'+currentUser.uid).onDisconnect().update({online:false});
+  roomRef = db.ref('rooms/'+id);
+  roomRef.child('name').once('value', s=>{
+    document.getElementById('current-room-name').textContent = s.val();
+    document.getElementById('current-room-id').textContent = 'ID: '+id;
+    document.getElementById('current-room-section').style.display='';
+    showTab('group');
+  });
+  roomRef.child('members').on('value', snap=>{
+    const members = snap.val()||{};
+    const el = document.getElementById('room-members');
+    el.innerHTML = Object.values(members).map(m=>`
+      <div style="display:flex;align-items:center;gap:6px;background:var(--surface2);padding:6px 10px;border-radius:8px;font-size:.8rem">
+        <span class="online-dot" style="background:${m.online?'var(--success)':'var(--muted)'}"></span>
+        <span>${m.name}</span>
+      </div>`).join('');
+  });
+  roomRef.child('chat').limitToLast(50).on('child_added', snap=>{
+    const msg = snap.val();
+    const el = document.getElementById('room-chat');
+    el.innerHTML += `<div style="margin-bottom:4px"><span style="color:var(--accent);font-weight:700">${msg.user}:</span> ${msg.text}</div>`;
+    el.scrollTop = el.scrollHeight;
+  });
+  roomRef.child('focusState').on('value', snap=>{
+    const state = snap.val();
+    if(state && state.active && !focusRunning) {
+      const remaining = Math.max(0, state.duration - Math.floor((Date.now()-state.startedAt)/1000));
+      toast(`👥 ${state.startedBy} started a group focus session!`);
+      beginFocus('', 'Group Study Session', remaining);
+    }
+  });
+  toast('Joined room '+id);
+}
+function leaveRoom() {
+  if(!currentRoom) return;
+  db.ref('rooms/'+currentRoom+'/members/'+currentUser.uid).update({online:false});
+  if(roomRef) { roomRef.child('members').off(); roomRef.child('chat').off(); roomRef.child('focusState').off(); }
+  currentRoom = null; roomRef = null;
+  document.getElementById('current-room-section').style.display='none';
+  toast('Left room');
+}
+function sendChat() {
+  const msg = document.getElementById('chat-msg').value.trim();
+  if(!msg||!currentRoom) return;
+  const name = currentUser.displayName||(currentUser.isAnonymous?'Guest':currentUser.email?.split('@')[0])||'User';
+  db.ref('rooms/'+currentRoom+'/chat').push({user:name, text:msg, ts:Date.now()});
+  document.getElementById('chat-msg').value='';
+}
+function loadRooms() {
+  db.ref('rooms').on('value', snap=>{
+    const rooms = snap.val()||{};
+    const el = document.getElementById('room-list');
+    const entries = Object.entries(rooms);
+    if(!entries.length){el.innerHTML='<div style="color:var(--muted);font-size:.85rem">No active rooms.</div>';return;}
+    el.innerHTML = entries.map(([id,r])=>{
+      const online = Object.values(r.members||{}).filter(m=>m.online).length;
+      return `<div class="group-room">
+        <div class="group-room-header">
+          <div class="room-name">${r.name}</div>
+          <div style="font-size:.75rem;color:var(--muted)"><span class="online-dot"></span>${online} online</div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div style="font-size:.75rem;color:var(--muted)">ID: <code style="background:var(--surface3);padding:2px 6px;border-radius:4px">${id}</code></div>
+          <button class="btn btn-sm btn-primary" data-rid="${id}" onclick="joinRoomById(this.dataset.rid)">Join</button>
+        </div>
+      </div>`;
+    }).join('');
+  });
+}
+
+// ── STATS ────────────────────────────────────────────────
+function renderStats() {
+  const today = todayKey();
+  const todaySecs = sessions.filter(s=>s.date===today).reduce((a,s)=>a+(s.duration||0),0);
+  document.getElementById('stat-today').textContent = fmtMin(todaySecs);
+  const weekStart = new Date(); weekStart.setDate(weekStart.getDate()-6);
+  const weekSecs = sessions.filter(s=>new Date(s.date)>=weekStart).reduce((a,s)=>a+(s.duration||0),0);
+  document.getElementById('stat-week').textContent = fmtH(weekSecs);
+  const done=tasks.filter(t=>t.done).length, total=tasks.length;
+  document.getElementById('stat-tasks').textContent = `${done}/${total}`;
+  userRef&&userRef.child('profile/streak').once('value',s=>document.getElementById('stat-streak').textContent=(s.val()||0)+'🔥');
+}
+function renderHeatmap() {
+  const el = document.getElementById('heatmap');
+  const days = 28;
+  const now = new Date();
+  const cells = [];
+  for(let i=days-1;i>=0;i--){
+    const d = new Date(now); d.setDate(d.getDate()-i);
+    const key = d.toISOString().split('T')[0];
+    const mins = sessions.filter(s=>s.date===key).reduce((a,s)=>a+(s.duration||0),0);
+    let intensity = mins<=0?0:mins<30?1:mins<60?2:3;
+    const colors=['var(--surface2)','#3b1e8e','var(--accent)','var(--accent2)'];
+    cells.push(`<div class="heat-cell" style="background:${colors[intensity]}" title="${key}: ${mins}min"></div>`);
+  }
+  el.innerHTML = cells.join('');
+}
+function renderSubjectStats() {
+  const el = document.getElementById('subject-stats');
+  if(!subjects.length){el.innerHTML='<div style="color:var(--muted);font-size:.85rem">No subjects yet.</div>';return;}
+  const subjectTotals = subjects.map(x=>sessions.filter(y=>y.subjectId===x.id).reduce((a,y)=>a+(y.duration||0),0));
+  const maxTime = Math.max(1, ...subjectTotals);
+  el.innerHTML = subjects.map((s,idx)=>{
+    const total = subjectTotals[idx];
+    const pct = Math.min(100, (total/maxTime)*100);
+    return '<div class="subject-item">'
+      + '<div class="subject-color" style="background:'+s.color+'"></div>'
+      + '<div style="flex:1">'
+      + '<div style="display:flex;justify-content:space-between"><span style="font-weight:600;font-size:.85rem">'+s.name+'</span><span style="font-family:Space Mono,monospace;font-size:.8rem;color:var(--accent2)">'+fmtMin(total)+'</span></div>'
+      + '<div class="progress-bar"><div class="progress-fill" style="width:'+pct+'%;background:'+s.color+'"></div></div>'
+      + '</div></div>';
+  }).join('');
+}
+function renderWeeklyStats() {
+  const el = document.getElementById('weekly-stats');
+  const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const now = new Date();
+  let html='<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;text-align:center">';
+  for(let i=6;i>=0;i--){
+    const d=new Date(now); d.setDate(d.getDate()-i);
+    const key=d.toISOString().split('T')[0];
+    const mins=sessions.filter(s=>s.date===key).reduce((a,s)=>a+(s.duration||0),0);
+    const h=Math.min(60,mins);
+    html+=`<div><div style="font-size:.65rem;color:var(--muted);margin-bottom:4px">${days[d.getDay()]}</div>
+      <div style="height:60px;display:flex;align-items:flex-end;justify-content:center">
+        <div style="width:80%;background:${mins>0?'var(--accent)':'var(--surface2)'};height:${Math.max(4,h)}px;border-radius:3px;transition:height .3s"></div>
+      </div>
+      <div style="font-size:.65rem;color:var(--muted);margin-top:4px">${mins}m</div>
+    </div>`;
+  }
+  html+='</div>';
+  el.innerHTML=html;
+}
+function loadLeaderboard() {
+  db.ref('leaderboard').orderByChild('totalTime').limitToLast(10).on('value', snap=>{
+    const data = snap.val()||{};
+    const sorted = Object.values(data).sort((a,b)=>b.totalTime-a.totalTime);
+    const el = document.getElementById('leaderboard');
+    if(!sorted.length){el.innerHTML='<div style="color:var(--muted);font-size:.85rem">No data yet.</div>';return;}
+    el.innerHTML = sorted.map((u,i)=>`
+      <div class="lb-item">
+        <div class="lb-rank">${['🥇','🥈','🥉'][i]||i+1}</div>
+        <div class="lb-name">${u.name}</div>
+        <div class="lb-time">${fmtMin(u.totalTime||0)}</div>
+      </div>`).join('');
+  });
+}
+// ── FOCUS HELPERS ────────────────────────────────────────
+function beginFocus(subId, name, secs) {
+  focusSubject = name; focusSeconds = secs; focusTotalSeconds = secs;
+  focusStartTime = Date.now(); focusPaused = false; focusRunning = true;
+  document.getElementById('focus-subject-label').textContent = name.toUpperCase();
+  document.getElementById('focus-mode-label').textContent = focusStrict ? '🔒 STRICT MODE' : 'FOCUS SESSION';
+  document.getElementById('strict-badge').style.display = focusStrict ? '' : 'none';
+  document.getElementById('focus-stop-btn').style.display = focusStrict ? 'none' : '';
+  document.getElementById('focus-quote').textContent = QUOTES[Math.floor(Math.random()*QUOTES.length)];
+  document.getElementById('focus-block-notice').textContent = focusStrict ? 'Tab switching disabled. Stay focused!' : '';
+  document.getElementById('focus-overlay').classList.add('active');
+  updateFocusDisplay();
+  focusTimer = setInterval(tickFocus, 1000);
+  window._focusSubId = subId;
+  if(focusStrict) document.addEventListener('visibilitychange', handleVisChange);
+}
+function handleVisChange() {
+  if(document.hidden && focusRunning) {
+    document.getElementById('block-overlay').classList.add('active');
+  }
+}
+function returnToFocus() {
+  document.getElementById('block-overlay').classList.remove('active');
+}
+function tickFocus() {
+  if(focusPaused) return;
+  focusSeconds--;
+  if(focusSeconds<=0) { completeFocus(); return; }
+  updateFocusDisplay();
+}
+function updateFocusDisplay() {
+  const m=Math.floor(focusSeconds/60), s=focusSeconds%60;
+  document.getElementById('focus-timer-display').textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  const pct = ((focusTotalSeconds-focusSeconds)/focusTotalSeconds)*100;
+  document.getElementById('focus-progress-fill').style.width = pct+'%';
+}
+function toggleFocusPause() {
+  focusPaused = !focusPaused;
+  document.getElementById('focus-pause-btn').textContent = focusPaused ? '▶ Resume' : '⏸ Pause';
+}
+function stopFocus() {
+  if(focusStrict) { toast('🔒 Strict mode active!'); return; }
+  endFocus(false);
+}
+function completeFocus() {
+  endFocus(true);
+  toast('🎉 Session complete! Great work!');
+}
+function endFocus(completed) {
+  clearInterval(focusTimer); focusRunning = false;
+  document.removeEventListener('visibilitychange', handleVisChange);
+  document.getElementById('focus-overlay').classList.remove('active');
+  document.getElementById('block-overlay').classList.remove('active');
+  const elapsed = Math.round((focusTotalSeconds - focusSeconds)/60);
+  if(elapsed > 0 && currentUser) {
+    const sessionData = {
+      subjectId: window._focusSubId||'',
+      subjectName: focusSubject,
+      duration: elapsed,
+      date: todayKey(),
+      timestamp: Date.now(),
+      completed
+    };
+    userRef.child('sessions').push(sessionData);
+    if(window._focusSubId) {
+      userRef.child('subjects/'+window._focusSubId+'/totalTime').transaction(v=>(v||0)+elapsed);
+    }
+    updateStreak();
+    db.ref('leaderboard/'+currentUser.uid).transaction(d=>{
+      const name = currentUser.displayName||(currentUser.isAnonymous?'Guest':currentUser.email?.split('@')[0])||'User';
+      return {name, totalTime: ((d&&d.totalTime)||0)+elapsed};
+    });
+  }
+}
+function updateStreak() {
+  userRef.child('profile/lastStudyDate').once('value', snap=>{
+    const last = snap.val();
+    const today = todayKey();
+    const yesterday = new Date(); yesterday.setDate(yesterday.getDate()-1);
+    const yKey = yesterday.toISOString().split('T')[0];
+    userRef.child('profile/streak').transaction(streak=>{
+      if(last===yKey) return (streak||0)+1;
+      if(last===today) return streak||1;
+      return 1;
+    });
+    userRef.child('profile/lastStudyDate').set(today);
+  });
+}
+function startGroupFocus() {
+  beginFocus('', 'Group Study Session', 1500);
+  if(currentRoom) {
+    db.ref('rooms/'+currentRoom+'/focusState').set({
+      active:true, startedBy:currentUser.displayName||'User', startedAt:Date.now(), duration:1500
+    });
+  }
+}
+
+// ── UTILS ─────────────────────────────────────────────────
+function todayKey(){ return new Date().toISOString().split('T')[0]; }
+function fmtMin(m){ 
+  const h = Math.floor(m / 60); 
+  const min = m % 60; 
+  return h > 0 ? `${h}h ${min}m` : `${min}m`; 
+}
+function fmtH(m){ 
+  return Math.round(m/60*10)/10 + 'h'; 
+}
+function toast(msg) {
+  const el = document.getElementById('toast'); 
+  if(!el) return;
+  el.textContent = msg; 
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2500);
+}
+</script>
+</body>
+</html>
